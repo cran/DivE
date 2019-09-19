@@ -8,19 +8,19 @@
 # Contents:
 #   A. SUBSAMPLE AND RAREFACTION DATA GENERATION
 #     1. Other functions
-#     2a-2c. Subsample sizes generation functions
-#     3a-3i. Rarefaction and diversity data generation functions (incl. summary)
+#     2a-2b. Subsample sizes generation functions
+#     3a-3h. Rarefaction and diversity data generation functions (incl. summary)
 #     4a.    Curvature function
 #   B. CURVE FITTING
-#     1a-1g. Supporting fitting functions
+#     1a-1n. Supporting fitting functions
 #     2a-2b. Fitting functions
 #     3a-3e. Fitting output functions (incl. summary)
 #   C. SCORING AND MODEL COMPARISON 
 #     1a-1f. Rounding functions
 #     2a.    Scoring single model 
-#     3a-3e. Scoring single model output
+#     3a-3d. Scoring single model output
 #     4a.    Comparison of models
-#     5a-5e. Comparison of models output
+#     5a-5d. Comparison of models output
 #     6a.    Combining separate runs
 #     7a.    Diversity estimate for different population size
 ###############################################################################
@@ -28,9 +28,9 @@
 ######################## A. SUBSAMPLE DATA GENERATION #########################
 ######################## A1. Function to format input #########################
 # Two formats accepted:
-# i. dataframe with two variables - clone id, number of clones
+# i. dataframe with two variables - species id, number of species
 # ii. dataframe, vector or matrix with one dimension
-format.input <- function(x, ...) {
+FormatInput <- function(x, ...) {
   if (is.data.frame(x) && (dim(x)[2] == 2)) {
     as.character(rep(x[,1], x[,2]))
   } else if (is.vector(x)) {
@@ -38,138 +38,132 @@ format.input <- function(x, ...) {
   } else if ((is.data.frame(x) && dim(x)[2] == 1) || (is.matrix(x) && dim(x)[2] == 1)) {
     as.character(x[,1])
   } else {
-    print("Incorrect sample input format - reformat and try again")
+    stop("Incorrect sample input format - reformat and try again")
   }
 }
+
 
 ############## A2a. Function to generate vector of subsample lengths #############
 # Inputs: Main sample, desired number of subsamples
 # By default produces a vector of length six with equally spaced subsample sizes
-gen.subsamp.lengths <- function(main.samp, num.subsamp) {
-  if ((length(num.subsamp))!=1) {
-    sort(num.subsamp, decreasing=TRUE)
+GenSubsampLengths <- function(main.samp, N_Subsamp) {
+  if ((length(N_Subsamp))!=1) {
+    sort(N_Subsamp, decreasing=TRUE)
   } else {
-    samp.int <- length(main.samp)/num.subsamp
-    sort(round(seq(from=samp.int, to=length(main.samp), by=samp.int)), decreasing=TRUE)
+    SampInt <- length(main.samp)/N_Subsamp
+    sort(round(seq(from=SampInt, to=length(main.samp), by=SampInt)), decreasing=TRUE)
   }
 }
 
-############### A2b. Generic generate subsample lengths function #################
-divsamplenum <- function(ms, n) {UseMethod("divsamplenum")}
-
-############### A2c. Default generate subsample lengths function #################
-divsamplenum.default <- function(ms, n=6) { 
-  if ((length(n)>1) && (n<2)) { 
-    stop('Number of nested subsamples (subsizes) must be 2 or greater')
+############### A2b. Generate subsample lengths function #################
+DivSampleNum <- function(ms, n=6) { 
+  if ((length(n)==1) && (n<2)) { 
+	stop('Number of nested subsamples (subsizes) must be 2 or greater')
   }
-  main.samp <- format.input(ms)
-  gen.subsamp.lengths(main.samp=main.samp, num.subsamp=n)
+  main.samp <- FormatInput(ms)
+  GenSubsampLengths(main.samp=main.samp, N_Subsamp=n)
 }
+
 
 ############ A3a. Function to generate vector of rarefaction datapoints ############
 # Inputs: Any sample, desired interval between rarefaction points, maximum data size of subsample, minimum data size of subsample
-gen.rarefac.lengths <- function(samp, num.rarefac, max.rarefac=length(format.input(samp)), min.rarefac=1) {
-  rarefac.int <- num.rarefac
-  out <- round(seq(from=min.rarefac, to=max.rarefac, by=rarefac.int))
-  if (out[length(out)]==max.rarefac) {
+GenRarefacLengths <- function(samp, N_Rarefac, Max_Rarefac=length(FormatInput(samp)), Min_Rarefac=1) {
+  RarefacInt <- N_Rarefac
+  out <- round(seq(from=Min_Rarefac, to=Max_Rarefac, by=RarefacInt))
+  if (out[length(out)]==Max_Rarefac) {
     return (out)
   } else {
-    out <- c(out, max.rarefac)
+    out <- c(out, Max_Rarefac)
     return (out)
   }
 }
 
 ############ A3b. Function to determine diversity of a (sub)sample  ###########
 # Inputs: Any vector
-div.count <- function(samp) {length(unique(samp))}
+DivCount <- function(samp) {length(unique(samp))}
 
 ##### A3c. Function to generate the sample diversity values at rarefaction datapoints for fitting ####
 # Inputs: Sample, interval between rarefaction datapoints, minimum data size of subsample, Iterations, maximum data size of subsample 
-gen.rarefac.div <- function(samp, num.rarefac, min.rarefac=1, B, max.rarefac=length(format.input(samp))) {
+GenRarefacDiv <- function(samp, N_Rarefac, Min_Rarefac=1, B, Max_Rarefac=length(FormatInput(samp))) {
   l <- length(samp)
-  rarefac.lengths <- gen.rarefac.lengths(samp, num.rarefac, max.rarefac, min.rarefac)
-  s <- length(rarefac.lengths)
-  order.vec <- as.vector(apply(matrix(sample(1:(l*B)), nrow=B, ncol=l), 1, order))
-  shuf.mat <- matrix(samp[order.vec], nrow=B, ncol=l, byrow=TRUE)
-  rarefac.div.mean <- rep(1, s)
-  rarefac.div.sd <- rep(0, s)
+  RarefacLengths <- GenRarefacLengths(samp, N_Rarefac, Max_Rarefac, Min_Rarefac)
+  s <- length(RarefacLengths)
+  OrderVec <- as.vector(apply(matrix(sample(1:(l*B)), nrow=B, ncol=l), 1, order))
+  ShuffleMat <- matrix(samp[OrderVec], nrow=B, ncol=l, byrow=TRUE)
+  RarefacDivMean <- rep(1, s)
+  RarefacDivSD <- rep(0, s)
   
   for (i in (2:s)) {
-    temp <- apply(shuf.mat[,1:rarefac.lengths[i]], 1, div.count)
-    rarefac.div.mean[i] <- mean(temp)
-    rarefac.div.sd[i] <- sd(temp)
+    temp <- apply(ShuffleMat[,1:RarefacLengths[i]], 1, DivCount)
+    RarefacDivMean[i] <- mean(temp)
+    RarefacDivSD[i] <- sd(temp)
   }
-  #rarefac.div.mean[s] <- div.count(samp)
-  #rarefac.div.sd[s] <- 0
-  list(RarefacXAxis=rarefac.lengths, 
-       RarefacYAxis=rarefac.div.mean,
-       div_sd=rarefac.div.sd,
+  list(RarefacXAxis=RarefacLengths, 
+       RarefacYAxis=RarefacDivMean,
+       div_sd=RarefacDivSD,
        NResamples=B)
 }
 
-############## A3d. Generic generate subsamples/diversity function ############
-divsubsamples <- function(mainsamp, nrf, minrarefac=1, maxrarefac=length(format.input(mainsamp)), NResamples=1000) {UseMethod("divsubsamples")}
+############# A3d. Generate subsamples/diversity function #############
+DivSubsamples <- function(mainsamp, nrf, minrarefac=1, maxrarefac=length(FormatInput(mainsamp)), NResamples=1000) { 
+  samp <- FormatInput(mainsamp)
 
-############# A3e. Default generate subsamples/diversity function #############
-divsubsamples.default <- function(mainsamp, nrf, minrarefac=1, maxrarefac=length(format.input(mainsamp)), NResamples=1000) { 
-  samp <- format.input(mainsamp)
-
-  xyvals <- gen.rarefac.div(samp=samp, num.rarefac=nrf, min.rarefac=minrarefac, B=NResamples, max.rarefac=maxrarefac)
+  xyvals <- GenRarefacDiv(samp=samp, N_Rarefac=nrf, Min_Rarefac=minrarefac, B=NResamples, Max_Rarefac=maxrarefac)
 
   xyvals$call <- match.call()
-  class(xyvals) <- "divsubsamples"
+  class(xyvals) <- "DivSubsamples"
   xyvals
 }
 
-################ A3f. Print method -  subsample/diversity data ################
-print.divsubsamples <- function(x, ...) {
+################ A3e. Print method -  subsample/diversity data ################
+print.DivSubsamples <- function(x, ...) {
   cat("RarefacXAxis:\n")
   print(x$RarefacXAxis)
   cat("\nRarefacYAxis (Mean diversity values):\n")
   print(x$RarefacYAxis)
 }
 
-################ A3g. Summary method: subsample/diversity data ################
-summary.divsubsamples <- function(object, ...) {
-  tot.div <- object$RarefacYAxis[length(object$RarefacYAxis)]
-  tot.rarefac <- length(object$RarefacXAxis)
-  samp.size <- object$RarefacXAxis[tot.rarefac]
-  num.iter <- object$NResamples
+################ A3f. Summary method: subsample/diversity data ################
+summary.DivSubsamples <- function(object, ...) {
+  TotDiv <- object$RarefacYAxis[length(object$RarefacYAxis)]
+  TotRarefac <- length(object$RarefacXAxis)
+  SampSize <- object$RarefacXAxis[TotRarefac]
+  N_Iter <- object$NResamples
   ave.sdpc <- mean(object$div_sd/object$RarefacYAxis)
-  TAB <- cbind(Subsample.size=samp.size,
-               Subsample.diversity=tot.div,
-               No.of.rarefac.points=tot.rarefac,
-               Iterations=num.iter,
+  TAB <- cbind(Subsample.size=SampSize,
+               Subsample.diversity=TotDiv,
+               No.of.rarefac.points=TotRarefac,
+               Iterations=N_Iter,
                Ave.StdErr=ave.sdpc)
-  dss.sum <- list(call=object$call,
-              rsum=TAB)
-  class(dss.sum) <- "summary.divsubsamples"
+  dss.sum <- list(call=object$call, rsum=TAB)
+  class(dss.sum) <- "summary.DivSubsamples"
   dss.sum
 }
 
-############ A3h. Print summary method -  subsample/diversity data ############
-print.summary.divsubsamples <- function(x, ...) {
+############ A3g. Print summary method -  subsample/diversity data ############
+print.summary.DivSubsamples <- function(x, ...) {
   cat("Call:\n")
   print(x$call)
   cat("\nSubsample data summary:\n")
   print(x$rsum)
 }
 
-############ A3i. Method to extract the relevant nested subset of a divsubsamples object ############
+############ A3h. Method to extract the relevant nested subset of a DivSubsamples object ############
 # Inputs: divsubsample object, size of nested subsample desired
-divsubsamples_nested <- function(dss, maxsamp) {
-  dss.temp <- dss
-  end.index <- which.min(abs(maxsamp-dss$RarefacXAxis))
-  dss.temp$RarefacXAxis <- dss$RarefacXAxis[1:end.index]
-  dss.temp$RarefacYAxis <- dss$RarefacYAxis[1:end.index]
-  dss.temp$div_sd <- dss$div_sd[1:end.index]
-  return (dss.temp)
+DivSubsamples_Nested <- function(dss, maxsamp) {
+  DSStemp <- dss
+  EndIndex <- which.min(abs(maxsamp-dss$RarefacXAxis))
+  DSStemp$RarefacXAxis <- dss$RarefacXAxis[1:EndIndex]
+  DSStemp$RarefacYAxis <- dss$RarefacYAxis[1:EndIndex]
+  DSStemp$div_sd <- dss$div_sd[1:EndIndex]
+  return (DSStemp)
 }
+
 
 ############ A4a. Method to calculate the curvature of a rarefaction curve ############
 # Inputs: divsubsample object
 Curvature <- function(dss) {
-  if ((length(dss) > 1) && (class(dss[[1]])=="divsubsamples")) {
+  if ((length(dss) > 1) && (class(dss[[1]])=="DivSubsamples")) {
     SubSizes = c()
     for (Sub in 1:length(dss)) {
       SubSizes[Sub] = tail(dss[[Sub]]$RarefacXAxis,1)
@@ -199,19 +193,10 @@ Curvature <- function(dss) {
 
 ############################# B. CURVE FITTING ################################
 
-#require(deSolve) # To be packaged correctly
-#require(FME) # To be packaged correctly
-
-####### B1a. Function to Load model list, initial parameter guesses, parameter ranges #######
-## Input: None
-#load.Mod <- function() { # Give the index of the models to fit
-#  load("modelset")
-#}
-
-####### B1b. Function to predict the diversity values from subsample x-values according to a given model #######
+####### B1a. Function to predict the diversity values from subsample x-values according to a given model #######
 # Input: Model id, rarefaction x-axis values, model parameters
 # Output: dataframe of x and y axis plotting values
-pred.div <- function(model, rarefac, params) {
+PredDiv <- function(model, rarefac, params) {
   model.param <- as.list(params)
   div.temp <- model(rarefac, model.param)
   if(any(div.temp=="NaN")) {  				# Ensures an infinite ssr
@@ -220,38 +205,37 @@ pred.div <- function(model, rarefac, params) {
   data.frame(RarefacXAxis=rarefac, RarefacYAxis=div.temp)
 }
 
-############# B1c. Function to calculate the residuals (modCost) ##############
-# Input: Model id, model parameters, divsubsamples object
-model.cost <- function(model, params, dss) {
-  xypred <- pred.div(model, dss$RarefacXAxis, params)
+####### B1b. Function to calculate the residuals (modCost) #######
+# Input: Model id, model parameters, DivSubsamples object
+ModelCost <- function(model, params, dss) {
+  xypred <- PredDiv(model, dss$RarefacXAxis, params)
   xyactual <- data.frame(RarefacXAxis=dss$RarefacXAxis, RarefacYAxis=dss$RarefacYAxis)
   modCost(xypred, xyactual, x="RarefacXAxis")
 }
 
-####### B1d. Function to calculate the discrepancy as the mean of pointwise percentage error ########
-# Input: Model id, model parameters, divsubsamples object
-model.cost.abs <- function(model, params, dss) {
-  ypred <- pred.div(model, dss$RarefacXAxis, params)$RarefacYAxis
+####### B1c. Function to calculate the discrepancy as the mean of pointwise percentage error #######
+# Input: Model id, model parameters, DivSubsamples object
+ModelCostAbs <- function(model, params, dss) {
+  ypred <- PredDiv(model, dss$RarefacXAxis, params)$RarefacYAxis
   yactual <- dss$RarefacYAxis
   mean(abs((ypred-yactual)/yactual))
 }
 
-############ B1e. Function to convert parameter ranges to vectors #############
+####### B1d. Function to convert parameter ranges to vectors #######
 # Input: model.set, Param.ranges (possibly truncated)
-convert.ranges <- function(model.set, param.ranges) {
-  bounds.lower <- list()
-  bounds.upper <- list()
+ConvertRanges <- function(model.set, param.ranges) {
+  BoundsLower <- list()
+  BoundsUpper <- list()
   for (mod in 1:length(model.set)) {
-    bounds.lower[[names(model.set)[mod]]] = param.ranges[[mod]]["Lower",]
-    bounds.upper[[names(model.set)[mod]]] = param.ranges[[mod]]["Upper",]
+    BoundsLower[[names(model.set)[mod]]] = param.ranges[[mod]]["Lower",]
+    BoundsUpper[[names(model.set)[mod]]] = param.ranges[[mod]]["Upper",]
   }
-  list(lower=bounds.lower, upper=bounds.upper)
+  list(lower=BoundsLower, upper=BoundsUpper)
 }
 
-################### B1f. Function to perform a global Fit #####################
+####### B1e. Function to perform a global Fit #######
 # Input: Function, initial parameters, lower parameter bounds, upper parameter bounds, Max no. of iterations, minimum variance
-#global.fit <- function(func, init.param, lower.bd, upper.bd, numit, varleft) {
-global.fit <- function(func, init.list, lower.bd, upper.bd, numit, varleft) {
+GlobalFit <- function(func, init.list, lower.bd, upper.bd, numit, varleft) {
   cat("Choosing optimal initial parameters for global fit", "\n")
   init.param <- (lower.bd + upper.bd)/2
   cost.lowest <- func(init.param)$model
@@ -270,25 +254,25 @@ global.fit <- function(func, init.list, lower.bd, upper.bd, numit, varleft) {
          method = "Pseudo", control = c(numiter = numit, varleft=varleft, verbose=TRUE))
 }
 
-#################### B1g. Function to perform a local Fit #####################
+####### B1f. Function to perform a local Fit #######
 # Input: Function, initial parameters, lower parameter bounds, upper parameter bounds, Max no. of iterations, minimum variance
-local.fit <- function(func, init.param, lower.bd, upper.bd) {
+LocalFit <- function(func, init.param, lower.bd, upper.bd) {
   cat("Performing local fit", "\n")
   localfit <- modFit(f = func, p = init.param, lower=lower.bd, upper=upper.bd,       # Local Fit
                      method = "Marq")
   return(localfit)
 }
 
-############# B1h. Function to perform a combined global-local Fit ############
+####### B1g. Function to perform a combined global-local Fit #######
 # Input: Function, initial parameters, lower parameter bounds, upper parameter bounds, Max no. of iterations, minimum variance
-combined.fit <- function(func, init.param, lower.bd, upper.bd, numit, varleft) {
-  g.fit <- global.fit(func, init.param, lower.bd, upper.bd, numit, varleft)
-  local.fit(func, g.fit$par, lower.bd, upper.bd)
+CombinedFit <- function(func, init.param, lower.bd, upper.bd, numit, varleft) {
+  g.fit <- GlobalFit(func, init.param, lower.bd, upper.bd, numit, varleft)
+  LocalFit(func, g.fit$par, lower.bd, upper.bd)
 }
 
-####### B1i. Function to convert function "funk" to function of a single variable #######
+####### B1h. Function to convert function "funk" to function of a single variable #######
 # Input: function, parameters
-single.var <- function(funk, params) {
+SingleVar <- function(funk, params) {
   fn = function(x)
   {
     funk(x, params)
@@ -296,9 +280,9 @@ single.var <- function(funk, params) {
   return(fn)
 }
 
-############# B1j. Function to find intersections between curves ##############
+####### B1i. Function to find intersections between curves #######
 # Input: function, parameters1, parameter2, lower x-limit, upper x-limit
-crossings <- function(model, param1, param2, xvals) {
+Crossings <- function(model, param1, param2, xvals) {
   yvals1 <- model(xvals, param1)
   yvals2 <- model(xvals, param2)
   s1 <- try(SpatialLines(list(Lines(list(Line(cbind(xvals , yvals1 ))) , ID=1))), silent = TRUE)
@@ -316,16 +300,15 @@ crossings <- function(model, param1, param2, xvals) {
   intersections
 }
 
-
-############### B1k. Function to evaluate distance between curves #############
+####### B1j. Function to evaluate distance between curves #######
 # Input: function, parameters1, parameter2, lower x-limit, upper x-limit
-simm <- function(model, param1, param2, lowerlimit, upperlimit, tot.length) {
-  intersections <- crossings(model, param1, param2, seq(lowerlimit, upperlimit, length.out=tot.length))
+Simm <- function(model, param1, param2, lowerlimit, upperlimit, tot.length) {
+  intersections <- Crossings(model, param1, param2, seq(lowerlimit, upperlimit, length.out=tot.length))
   
   # No intersections
   if (length(intersections) == 0  |  (class(intersections) == "try-error")) {
-    dist <- abs(as.numeric(as.character(integrate(single.var(model, param1), lower = lowerlimit, upper = upperlimit))[1])  -
-      as.numeric(as.character(integrate(single.var(model, param2), lower = lowerlimit, upper = upperlimit))[1]))
+    dist <- abs(as.numeric(as.character(integrate(SingleVar(model, param1), lower = lowerlimit, upper = upperlimit))[1])  -
+      as.numeric(as.character(integrate(SingleVar(model, param2), lower = lowerlimit, upper = upperlimit))[1]))
     return(dist)
   } else if (length(intersections) != 0 & (class(intersections) != "try-error")) {
     # with intersections
@@ -337,55 +320,56 @@ simm <- function(model, param1, param2, lowerlimit, upperlimit, tot.length) {
     
     dist <- 0
     for(interval in 1:(dim(intersections)[1]+1)) {
-      dist <- dist + abs(as.numeric(as.character(integrate(single.var(model, param1), lower=limits[interval],
+      dist <- dist + abs(as.numeric(as.character(integrate(SingleVar(model, param1), lower=limits[interval],
                                                            upper=limits[interval+1]))[1]) -
-                                                             as.numeric(as.character(integrate(single.var(model, param2), lower=limits[interval], 
+                                                             as.numeric(as.character(integrate(SingleVar(model, param2), lower=limits[interval], 
                                                                                                upper=limits[interval+1]))[1]))
     }
     return(dist)
   }
 }
 
-######## B1l. Function to evaluate the area under the reference curve #########
+####### B1k. Function to evaluate the area under the reference curve #######
 # Input: function, parameters1, lower x-limit, upper x-limit
-ref.area <- function(model, param1, lowerlimit, upperlimit) {
-  total.area <- abs(as.numeric(as.character(integrate(single.var(model, param1), lower = lowerlimit, upper = upperlimit))[1]))
+RefArea <- function(model, param1, lowerlimit, upperlimit) {
+  total.area <- abs(as.numeric(as.character(integrate(SingleVar(model, param1), lower = lowerlimit, upper = upperlimit))[1]))
   return(total.area)
 }
 
 ####### B1l. Function to evaluate the mean squared distances between curves #######
 # Input: function, parameters1, parameter2, lower x-limit, upper x-limit
-msr.curves <- function(dist) {
+MSRcurves <- function(dist) {
   return(sum(dist*dist)/(2*nrow(dist)))
 }
 
-####### B1m. Function to evaluate the monotoniticy of the fitted curve ########
+####### B1m. Function to evaluate the monotoniticy of the fitted curve #######
 # Input: Model, parameters, minimum datapoint, maximum datapoint, number of points to test
-is.mono <- function(model, params, min.samp, max.samp, tot.length) {
+IsMonotonic <- function(model, params, min.samp, max.samp, tot.length) {
   xvals <- seq(min.samp, max.samp, length.out=tot.length)
   all(diff(model(xvals, params))>=0)
 }
 
-####### B1n. Function to evaluate the negativity of the 2nd derivative of the fitted curve ########
+####### B1n. Function to evaluate the negativity of the 2nd derivative of the fitted curve #######
 # Input: Model, parameters, minimum data size, maximum data size, number of points to test
-is.slowing <- function(model, params, min.samp, max.samp, tot.length) {
+IsSlowing <- function(model, params, min.samp, max.samp, tot.length) {
   xvals <- seq(min.samp, max.samp, length.out=tot.length)
   all(round(diff(diff(model(xvals, params))), 5)<=0)
 }
 
-################# B2a. Fit a single sample to a single model ##################
-fitsample <- function(model, init.param, lower.bd, upper.bd, dss, numit, varleft) {
+
+####### B2a. Fit a single sample to a single model #######
+FitSample <- function(model, init.param, lower.bd, upper.bd, dss, numit, varleft) {
   func <- function(p) {
-    model.cost(model, p, dss)
+    ModelCost(model, p, dss)
   }
-  combined.fit(func, init.param, lower.bd, upper.bd, numit, varleft)
+  CombinedFit(func, init.param, lower.bd, upper.bd, numit, varleft)
 }
 
-############# B2b. Fit all samples to a single model ##############
+####### B2b. Fit all samples to a single model #######
 # Input: SS=list of subsample sizes, model, initial parameters, parameter boundaries,
 #       list of diversity subsample objects, numit, varleft, population total estimate, vector of original samples,
 #       minimum sample size (for criteria 3 & 4)
-fitallSubs <- function(SS, model.list, init.param, param.range, dSS, numit, varleft, tot.pop, v1, minsampsize) {
+FitAllSubs <- function(SS, model.list, init.param, param.range, dSS, numit, varleft, tot.pop, v1, minsampsize) {
   
   ###### Extract model and name ######
   model <- model.list[[1]]
@@ -480,23 +464,23 @@ fitallSubs <- function(SS, model.list, init.param, param.range, dSS, numit, varl
     }
 
 
-    fit <- try(fitsample(model, init.param, lower.bd, upper.bd, dSS[[b]], numit, varleft), silent=TRUE)
+    fit <- try(FitSample(model, init.param, lower.bd, upper.bd, dSS[[b]], numit, varleft), silent=TRUE)
     
     if(class(fit) == "try-error") {next} 
 
     param.mat[b,] <- fit$par # Assign parameter values
     ssr.mat[b,] <- fit$ssr # Assign sum of squared residuals
     ms.mat[b,] <- fit$ms # Assign mean squared residuals
-    discrep.mat[b,] <- model.cost.abs(model, fit$par, dSS[[b]]) # Assign discrepancy mean absolute residuals (in percentages)
+    discrep.mat[b,] <- ModelCostAbs(model, fit$par, dSS[[b]]) # Assign discrepancy mean absolute residuals (in percentages)
     local.mat[b,] <- model(length(v1), fit$par) # Assign local diversity prediction
     global.mat[b,] <- model(tot.pop, fit$par) # Assign global diversity prediction
     AccuracyToObserved.mat[b,] <- (model(length(v1), fit$par) - length(unique(v1)))/length(unique(v1)) # Assign % accuracy of local diversity predition
     
     # Assign plausibility assessments
-    monotonic.local.mat[b,] <- is.mono(model, fit$par, min.samp=minsampsize, max.samp=length(v1), tot.length=length(v1)-minsampsize+1) 
-    monotonic.global.mat[b,] <- is.mono(model, fit$par, min.samp=minsampsize, max.samp=tot.pop, tot.length=min(tot.pop-minsampsize+1,2000))
-    slowing.local.mat[b,] <- is.slowing(model, fit$par, min.samp=minsampsize, max.samp=length(v1), tot.length=length(v1)-minsampsize+1) 
-    slowing.global.mat[b,] <- is.slowing(model, fit$par, min.samp=minsampsize, max.samp=tot.pop, tot.length=min(tot.pop-minsampsize+1,2000))
+    monotonic.local.mat[b,] <- IsMonotonic(model, fit$par, min.samp=minsampsize, max.samp=length(v1), tot.length=length(v1)-minsampsize+1) 
+    monotonic.global.mat[b,] <- IsMonotonic(model, fit$par, min.samp=minsampsize, max.samp=tot.pop, tot.length=min(tot.pop-minsampsize+1,2000))
+    slowing.local.mat[b,] <- IsSlowing(model, fit$par, min.samp=minsampsize, max.samp=length(v1), tot.length=length(v1)-minsampsize+1) 
+    slowing.global.mat[b,] <- IsSlowing(model, fit$par, min.samp=minsampsize, max.samp=tot.pop, tot.length=min(tot.pop-minsampsize+1,2000))
     plausibility.mat[b,2] <- ((monotonic.local.mat[b,])*(monotonic.global.mat[b,]))==1
     plausibility.mat[b,3] <- (slowing.global.mat[b,])==1
     plausibility.mat[b,1] <- (plausibility.mat[b,2]*plausibility.mat[b,3])==1
@@ -504,8 +488,8 @@ fitallSubs <- function(SS, model.list, init.param, param.range, dSS, numit, varl
   }
   
   # Assign similarity measures (local and global)
-  norm.fac.local <- try(ref.area(model, param.mat[1,], minsampsize, length(v1)), silent=TRUE)
-  norm.fac.global <- try(ref.area(model, param.mat[1,], minsampsize, tot.pop), silent=TRUE)
+  norm.fac.local <- try(RefArea(model, param.mat[1,], minsampsize, length(v1)), silent=TRUE)
+  norm.fac.global <- try(RefArea(model, param.mat[1,], minsampsize, tot.pop), silent=TRUE)
 
   
   for (b in 1:length(SS)) {
@@ -514,9 +498,9 @@ fitallSubs <- function(SS, model.list, init.param, param.range, dSS, numit, varl
         sim.local.mat[b,c] <- 0
         sim.global.mat[b,c] <- 0
       } else {
-        local.tmp.mat <- try(simm(model, param.mat[b,], param.mat[c,], lowerlimit=minsampsize,
+        local.tmp.mat <- try(Simm(model, param.mat[b,], param.mat[c,], lowerlimit=minsampsize,
                                    upperlimit=length(v1), tot.length=length(v1)-minsampsize+1), silent=TRUE)
-        global.tmp.mat <- try(simm(model, param.mat[b,], param.mat[c,], lowerlimit=minsampsize,
+        global.tmp.mat <- try(Simm(model, param.mat[b,], param.mat[c,], lowerlimit=minsampsize,
                                     upperlimit=tot.pop, tot.length=tot.pop-minsampsize+1), silent=TRUE)
         if((class(local.tmp.mat) != "try-error") & (class(global.tmp.mat) != "try-error")) {
           sim.local.mat[b,c] <- local.tmp.mat
@@ -541,8 +525,8 @@ fitallSubs <- function(SS, model.list, init.param, param.range, dSS, numit, varl
   }
   
   # Assign msr between sample curves
-  msr.curve.mat[1,1] <- msr.curves(sim.local.mat)
-  msr.curve.mat[2,1] <- msr.curves(sim.global.mat)
+  msr.curve.mat[1,1] <- MSRcurves(sim.local.mat)
+  msr.curve.mat[2,1] <- MSRcurves(sim.global.mat)
   
   list(param=param.mat, ssr=ssr.mat, ms=ms.mat, discrep=discrep.mat, local=local.mat, global=global.mat, AccuracyToObserved=AccuracyToObserved.mat,
        subsamplesizes=SS, datapoints=dSS, modelname=names(model.list), numparam=ncol(param.mat), sampvar=msr.curve.mat,
@@ -552,35 +536,26 @@ fitallSubs <- function(SS, model.list, init.param, param.range, dSS, numit, varl
 }
 
 
-#################### B3a. Generic fit single model function ###################
-fitsinglemod <- function(model.list, init.param, param.range, main.samp, tot.pop=(100*(divsamplenum(main.samp,2)[1])),
-                         numit=10^5, varleft=1e-8, data.default=TRUE, subsizes=6, dssamps=list(),
-                         nrf=1, minrarefac=1, NResamples=1000, minplaus=10, fitloops=2) {
-  UseMethod("fitsinglemod")
-}
-
-
-################### B3b. Default fit single model function ####################
-fitsinglemod.default <- function(model.list, init.param, param.range, main.samp, tot.pop=(100*(divsamplenum(main.samp,2)[1])),
-                                 numit=10^5, varleft=1e-8, data.default=TRUE, subsizes=6, dssamps=list(),
-                                 nrf=1, minrarefac=1, NResamples=1000, minplaus=10, fitloops=2) { 
+####### B3a. Fit single model function #######
+FitSingleMod <- function(model.list, init.param, param.range, main.samp, tot.pop=(100*(DivSampleNum(main.samp,2)[1])),
+		numit=10^5, varleft=1e-8, data.default=TRUE, subsizes=6, dssamps=list(),
+		nrf=1, minrarefac=1, NResamples=1000, minplaus=10, fitloops=2) { 
   
-  v1 <- format.input(main.samp) # Convert samp to a vector of length=main sample length and with clone ids
+  v1 <- FormatInput(main.samp) # Convert samp to a vector of length=main sample length and with species ids
   if (data.default) {
     cat("Creating subsamples and rarefaction data", "\n")
-    SS <- divsamplenum(main.samp, subsizes)
+    SS <- DivSampleNum(main.samp, subsizes)
     
     # Create divsubsample object for each sample
     samp <- v1
     dSS <- list()
     
-    main.dss <- divsubsamples(mainsamp=samp, nrf=nrf, minrarefac=minrarefac, maxrarefac=SS[1])
+    main.dss <- DivSubsamples(mainsamp=samp, nrf=nrf, minrarefac=minrarefac, maxrarefac=SS[1])
 
     dSS[[1]] <- main.dss
     for (b in (2:length(SS))) {
-      #samp <- sample(samp, size=SS[b], replace=FALSE)
       max.ss <- SS[b]
-      dss_temp <- divsubsamples_nested(main.dss, max.ss)
+      dss_temp <- DivSubsamples_Nested(main.dss, max.ss)
       dSS[[b]] <- dss_temp
     }
   } else {
@@ -591,23 +566,22 @@ fitsinglemod.default <- function(model.list, init.param, param.range, main.samp,
   
   # Fit the samples
   cat("Fitting loop 1", "\n")
-  fitsingle <- fitallSubs(SS, model.list, init.param, param.range, dSS, numit, varleft, tot.pop, v1, minplaus)
+  fitsingle <- FitAllSubs(SS, model.list, init.param, param.range, dSS, numit, varleft, tot.pop, v1, minplaus)
   
   if (fitloops > 1) {
     for (c in (2:fitloops)) {
       cat("Fitting loop", c, "\n")
       rbind(init.param, fitsingle$param)
-      fitsingle <- fitallSubs(SS, model.list, init.param, param.range, dSS, numit, varleft, tot.pop, v1, minplaus)
+      fitsingle <- FitAllSubs(SS, model.list, init.param, param.range, dSS, numit, varleft, tot.pop, v1, minplaus)
     }
   }
   fitsingle$call <- match.call()
-  class(fitsingle) <- "fitsingleMod"
+  class(fitsingle) <- "FitSingleMod"
   fitsingle
 }
 
-
-################## B3c. Print method -  fit of single model ###################
-print.fitsingleMod <- function(x, ...) {
+####### B3b. Print method -  fit of single model #######
+print.FitSingleMod <- function(x, ...) {
   cat("Fitting results for model:", x$modelname, "\n")
   cat("Model parameters ($param):\n")
   print(x$param)
@@ -615,46 +589,21 @@ print.fitsingleMod <- function(x, ...) {
   cat("\nSubsample sizes ($subsamplesizes):\n")
   print(x$subsamplesizes)
   
-  #cat("\nSum-of-squares residuals ($ssr):\n")
-  #print(x$ssr)
-  #cat("\nMean-squared residuals ($ms):\n")
-  #print(x$ms)
-  #cat("\nDiscrepancy mean absolute residual percentages ($discrep):\n")
-  #print(x$discrep)
-  
   cat("\nMeasures for discrepancies between rarefaction data and model fits ($discrep, $ssr, $ms):\n")
   print(cbind(x$discrep, x$ssr, x$ms))
-  
-  #cat("\nLocal diversity predictions ($local):\n")
-  #print(x$local)
-  #cat("\nGlobal diversity predictions ($global):\n")
-  #print(x$global)
-  #cat("\nMain sample observation accuracy ($AccuracyToObserved):\n")
-  #print(x$AccuracyToObserved)
   
   cat("\nDiversity predictions and the local prediction accuracy ($AccuracyToObserved, $local, $global):\n")
   print(cbind(x$AccuracyToObserved, x$local, x$global))
   
-  #cat("\nDistances between sample local fits ($dist.local):\n")
-  #print(x$dist.local)
-  #cat("\nDistances between sample global fits ($dist.global):\n")
-  #print(x$dist.global)
-  
   cat("\nSimilarity measure: normalised area between curve and largest-sample curve ($local.ref.dist):\n")
   print(x$local.ref.dist)
   
-  #cat("\nMean-squared residuals of sample curves ($sampvar):\n")
-  #print(x$sampvar)
-  
   cat("\nPlausibility measures: monotonicity and decreasing 2nd derivative ($plausibility):\n")
   print(x$plausibility)
-
-  #cat("\nSubsample and rarefraction datapoints ($datapoints):\n")
-  #print(x$datapoints)
 }
 
-################## B3d. Summary method: fit of single model ###################
-summary.fitsingleMod <- function(object, ...) {
+####### B3c. Summary method: fit of single model #######
+summary.FitSingleMod <- function(object, ...) {
   tot.subsamp <- length(object$datapoints)
   num.rf <- length((object$datapoints[[1]])$RarefacXAxis)
   fitted.model <- object$modelname
@@ -666,21 +615,20 @@ summary.fitsingleMod <- function(object, ...) {
                No.of.model.parameters=n.param)
   fit.sum <- list(call=object$call,
                   rsum=TAB)
-  class(fit.sum) <- "summary.fitsingleMod"
+  class(fit.sum) <- "summary.FitSingleMod"
   fit.sum
 }
 
-############## B3e. Print summary method -  fit of single model ###############
-print.summary.fitsingleMod <- function(x, ...) {
+####### B3d. Print summary method -  fit of single model #######
+print.summary.FitSingleMod <- function(x, ...) {
   cat("Call:\n")
   print(x$call)
   cat("\nSingle model fit setup summary:\n")
   print(x$rsum)
 }
 
-
-################## B3f. Plot method -  fit of single model ####################
-plot.fitsingleMod <- function(x, range="local", ...) {
+####### B3e. Plot method -  fit of single model #######
+plot.FitSingleMod <- function(x, range="local", ...) {
   points.colours <- c("red", "green", "brown", "orange", "blue", "yellow")
   
   # Define plot limits
@@ -744,15 +692,16 @@ plot.fitsingleMod <- function(x, range="local", ...) {
   points(x=Sample_number, y=Species_count, pch=20, col="purple", cex=3)
 }
 
+
 ####################### C. SCORING AND MODEL COMPARISON #######################
-############################ C1a. Whole number check ##########################
+####### C1a. Whole number check #######
 # Input: Single number
 # Output: TRUE/FALSE
 IsWholeNumber <- function(x, tol = .Machine$double.eps^0.5) {
   return(abs(x - round(x)) < tol)  
 }
 
-########## C1b. Binning function - Single number, absolute divisor ############
+####### C1b. Binning function - Single number, absolute divisor #######
 # Input: Number, divisor
 # Output: Number rounded UP to multiple of divisor
 BinFunkSingleNumber <- function(x,d) {
@@ -771,14 +720,14 @@ BinFunkSingleNumber <- function(x,d) {
   }
 }
 
-######### C1c. Binning function - Vector of numbers, absolute divisor #########
+####### C1c. Binning function - Vector of numbers, absolute divisor #######
 # Input: Vector of numbers, divisor
 # Output: Vector of number rounded UP to multiple of divisor
 BinFunk <- function(xx,dd) {  	# this rounds each entry of xx DOWN to the last multiple of dd. 
   return(sapply(xx , BinFunkSingleNumber, d = dd))
 }
 
-######### C1d. Binning function - Single number, Percentage precision #########
+####### C1d. Binning function - Single number, Percentage precision #######
 # Input: Number, precison
 # Output: Number rounded to specified precision
 Bfunprop = function(a, percent) {
@@ -808,17 +757,18 @@ BBprop=function(aa,percentwecareabout) {
 ####### C1f. Geometric mean function #######
 # Input: Top estimates
 # Output: Geometric mean
-geo.mean <- function(x) {
+GeoMean <- function(x) {
   if (any(is.na(x))) {warning('global diversity values are unreliable due to one or more poor model fits amongst top models')}
   return(exp(mean(log(x), na.rm=TRUE)))
 }
 
-##################### C2a. Scoring function - Single model ####################
+
+####### C2a. Scoring function - Single model #######
 # Input: FitsingleMod, Sample aggregation method ("Equal", "Proportional", "InvProportional"), 
 #         Criteria rounding values c(fit, accuracy, local similarity), plausibility penalty score
 # Output: Single model scores - Five criteria - 1. Fit, 2. Accuracy, 3. Local similarity, 
 #         4. Monotonicity (local-global combined), 5. Plausible-global
-single.mod.score <- function(fsm, precision.lv = c(0.0001, 0.005, 0.005), plaus.pen=500) {
+SingleModScore <- function(fsm, precision.lv = c(0.0001, 0.005, 0.005), plaus.pen=500) {
   nS <- length(fsm$subsamplesizes) # No. of samples
   samp.wts <- rep(1/nS, nS)
 
@@ -831,20 +781,6 @@ single.mod.score <- function(fsm, precision.lv = c(0.0001, 0.005, 0.005), plaus.
   
   # Monotonic and plausibility scores penalties
   for (i in 1:nS) {
-#     if (is.na(fsm$mono.local[i,]) || is.na(fsm$mono.global[i,])) {
-#       monotonic.scores[i] <- NA
-#     } else if (fsm$mono.local[i,]==FALSE || fsm$mono.global[i,]==FALSE) {
-#       monotonic.scores[i] <- plaus.pen
-#     }
-#     if (is.na(fsm$slowing.global[i,])) {
-#       plausible.scores[i] <- NA
-#     } else if (fsm$slowing.global[i,] == FALSE) {
-#       plausible.scores[i] <- plaus.pen
-#     }
-#     if (plausible.scores[i] == plaus.pen && monotonic.scores[i] == plaus.pen) {
-#       monotonic.scores[i] <- plaus.pen/2
-#       plausible.scores[i] <- plaus.pen/2
-#     }
     
     if (is.na(fsm$plausibility[i,1]) || fsm$plausibility[i,1]==FALSE) {
       plausible.scores <- plaus.pen
@@ -855,28 +791,23 @@ single.mod.score <- function(fsm, precision.lv = c(0.0001, 0.005, 0.005), plaus.
   fit.agg <- sum(fit.scores*samp.wts)
   accuracy.agg <- sum(accuracy.scores*samp.wts)
   similarity.agg <- sum(similarity.scores*samp.wts[2:length(samp.wts)])/sum(samp.wts[2:length(samp.wts)])
-  #monotonic.agg <- sum(plausible.scores*samp.wts)
   plausible.agg <- sum(plausible.scores*samp.wts)
   list(fit=fit.agg, accuracy=accuracy.agg, similarity=similarity.agg, plausibility=plausible.agg,
        binsize=precision.lv, plausibility.penalty=plaus.pen,
        modname=fsm$modelname)
 }
 
-################### C3a. Generic score single model function ##################
-scoresinglemod <- function(fsm, precision.lv = c(0.0001, 0.005, 0.005), plaus.pen=500) {
-  UseMethod("scoresinglemod")
-}
 
-################### C3b. Default score single model function ##################
-scoresinglemod.default <- function(fsm, precision.lv = c(0.0001, 0.005, 0.005), plaus.pen=500) {
-  scoresingle <- single.mod.score(fsm, precision.lv, plaus.pen)
+####### C3a. Score single model function #######
+ScoreSingleMod <- function(fsm, precision.lv = c(0.0001, 0.005, 0.005), plaus.pen=500) {
+  scoresingle <- SingleModScore(fsm, precision.lv, plaus.pen)
   scoresingle$call <- match.call()
-  class(scoresingle) <- "scoresingleMod"
+  class(scoresingle) <- "ScoreSingleMod"
   scoresingle
 }
 
-################# C3c. Print method -  score of single model ##################
-print.scoresingleMod <- function(x, ...) {
+####### C3b. Print method -  score of single model #######
+print.ScoreSingleMod <- function(x, ...) {
   cat("Scoring results ($[colnames]):\n")
   score.output <- matrix(c(x$fit, x$accuracy, x$similarity, x$plausibility), nrow=1, ncol=4)
   rownames(score.output) <- as.character(x$modname)
@@ -884,8 +815,8 @@ print.scoresingleMod <- function(x, ...) {
   print(score.output)
 }
 
-################# C3d. Summary method: score of single model ##################
-summary.scoresingleMod <- function(object, ...) {
+####### C3c. Summary method: score of single model #######
+summary.ScoreSingleMod <- function(object, ...) {
   fitted.model <- object$modname
   binsize <- object$binsize
   plauspen <- object$plausibility.penalty
@@ -897,12 +828,12 @@ summary.scoresingleMod <- function(object, ...) {
                Plausibility.penalty=plauspen)
   score <- list(call=object$call,
               rsum=TAB)
-  class(score) <- "summary.scoresingleMod"
+  class(score) <- "summary.ScoreSingleMod"
   score
 }
 
-############# C3e. Print summary method -  score of single model ##############
-print.summary.scoresingleMod <- function(x, ...) {
+####### C3d. Print summary method -  score of single model #######
+print.summary.ScoreSingleMod <- function(x, ...) {
   cat("Call:\n")
   print(x$call)
   cat("\nSingle model scoring setup summary:\n")
@@ -910,21 +841,21 @@ print.summary.scoresingleMod <- function(x, ...) {
 }
 
 
-################# C4a. Combine attributes of a single model ###################
-# Input: scoresingleMod object, Criteria weights (zero=exclude from scoring)
+####### C4a. Combine attributes of a single model #######
+# Input: ScoreSingleMod object, Criteria weights (zero=exclude from scoring)
 # Output: Single model score
-combine.criteria <- function(ssm, crit.wts=c(1.0, 1.0, 1.0, 1.0)) {
+CombineCriteria <- function(ssm, crit.wts=c(1.0, 1.0, 1.0, 1.0)) {
   vect <- c(ssm$fit, ssm$accuracy, ssm$similarity, ssm$plausibility)
   vect <- sum((vect*crit.wts)/sum(crit.wts))
   return(vect)
 }
 
-################# C4b. Fit, score and compare multiple models #################
+####### C4b. Fit, score and compare multiple models #######
 # Input: List of models, List of initial parameters, List of Lower bounds, List of upper bounds,
 #       main.samp, tot.pop, numit, varleft, subsizes, dssamps, nrf, minrarefac, NResamples, minplaus,
 #       precision.lv, plaus.pen, crit.wts, fitloops, numpred
 # Output: List of i) Model scores ii) List of dss iii) List of ssm iv) predictions x3 vii) original model list
-multiple.scoring <- function(models, init.params, param.ranges, main.samp, tot.pop, numit, varleft,
+MultipleScoring <- function(models, init.params, param.ranges, main.samp, tot.pop, numit, varleft,
                              subsizes, dssamps, nrf, minrarefac, NResamples, minplaus, precision.lv, plaus.pen, crit.wts,
                              fitloops, numpred) {
   num.mod <- length(models)
@@ -938,21 +869,20 @@ multiple.scoring <- function(models, init.params, param.ranges, main.samp, tot.p
   if (length(dssamps)==0) {
     cat("Creating subsamples and rarefaction data", "\n")
     mas.dss <- list() # Create 3 master samples
-    mas.SS <- divsamplenum(main.samp, subsizes) # Create master vector of 3 samples sizes
-    samp <- format.input(main.samp) # Format main sample
+    mas.SS <- DivSampleNum(main.samp, subsizes) # Create master vector of 3 samples sizes
+    samp <- FormatInput(main.samp) # Format main sample
     
-    dss.main <- divsubsamples(mainsamp=samp, nrf=nrf, minrarefac=minrarefac, maxrarefac=mas.SS[1], NResamples=NResamples)
+    dss.main <- DivSubsamples(mainsamp=samp, nrf=nrf, minrarefac=minrarefac, maxrarefac=mas.SS[1], NResamples=NResamples)
     mas.dss[[1]] <- dss.main
-    for (b in (2:length(mas.SS))) { # Create master list of divsubsamples
-      #samp <- sample(samp, size=mas.SS[b], replace=FALSE)
+    for (b in (2:length(mas.SS))) { # Create master list of DivSubsamples
       max.ss <- mas.SS[b]
-      dss <- divsubsamples_nested(dss.main, max.ss)
+      dss <- DivSubsamples_Nested(dss.main, max.ss)
       mas.dss[[b]] <- dss  
     }
   } else {
     cat("Loading predefined subsamples", "\n")
-    mas.SS <- divsamplenum(main.samp, subsizes)
-    samp <- format.input(main.samp) # Format main sample
+    mas.SS <- DivSampleNum(main.samp, subsizes)
+    samp <- FormatInput(main.samp) # Format main sample
 
     mas.dss <- dssamps
   }
@@ -963,19 +893,19 @@ multiple.scoring <- function(models, init.params, param.ranges, main.samp, tot.p
   for (i in (1:num.mod)) {
     # Fit model
     cat("Fitting model", i, "of", length(models),"(Est. time remaining:", timeremain, "mins)", "\n")
-    fsm.temp <- fitsinglemod(model.list=models[i], init.param=init.params[[i]], param.range=param.ranges[[i]],
+    fsm.temp <- FitSingleMod(model.list=models[i], init.param=init.params[[i]], param.range=param.ranges[[i]],
                              main.samp, data.default=FALSE, tot.pop= tot.pop, numit=numit, varleft=varleft,
                              subsizes=mas.SS, dssamps=mas.dss, nrf=nrf, minrarefac=minrarefac, NResamples=NResamples,
                              minplaus=minplaus, fitloops=fitloops)
     
     # Score model criteria
     cat("Scoring model", i, "\n")
-    ssm.temp <- try(scoresinglemod(fsm=fsm.temp, precision.lv = precision.lv, plaus.pen=plaus.pen), silent=TRUE)
+    ssm.temp <- try(ScoreSingleMod(fsm=fsm.temp, precision.lv = precision.lv, plaus.pen=plaus.pen), silent=TRUE)
     if(class(ssm.temp) == "try-error") {next}  
     
     # Aggregate criteria score
     cat("Aggregating scoring for model", i, "\n")
-    mod.score.temp <- combine.criteria(ssm=ssm.temp, crit.wts=crit.wts)
+    mod.score.temp <- CombineCriteria(ssm=ssm.temp, crit.wts=crit.wts)
     
     fmm[[fsm.temp$modelname]] <- fsm.temp
     ssm[i,1] <- ssm.temp$fit
@@ -1003,7 +933,7 @@ multiple.scoring <- function(models, init.params, param.ranges, main.samp, tot.p
     tmp <- ((fmm[[topx_index[i]]])$global)[1,]
     predx.vector <- c(predx.vector, tmp)
   }
-  predx <- geo.mean(predx.vector)
+  predx <- GeoMean(predx.vector)
   predx_high <- max(predx.vector)
   predx_low <- min(predx.vector)
   
@@ -1011,52 +941,33 @@ multiple.scoring <- function(models, init.params, param.ranges, main.samp, tot.p
 }
 
 
-############### C5a. Generic fit/score multiple model function ################
-DiveMaster <- function(models, init.params, param.ranges, main.samp, tot.pop=(100*(divsamplenum(main.samp,2)[1])), numit=10^5, varleft=1e-8,
-                       subsizes=6, dssamps=list(), nrf=1, minrarefac=1, NResamples=1000, minplaus=10, 
-                       precision.lv=c(0.0001, 0.005, 0.005), plaus.pen=500,
-                       crit.wts=c(1.0, 1.0, 1.0, 1.0), fitloops=2, numpred=5) {
-  UseMethod("DiveMaster")
-}
-
-################ C5b. Default fit/score single model function #################
-DiveMaster.default <- function(models, init.params, param.ranges, main.samp, tot.pop=(100*(divsamplenum(main.samp,2)[1])), numit=10^5, varleft=1e-8,
+####### C5a. Fit/score multiple models function #######
+DiveMaster <- function(models, init.params, param.ranges, main.samp, tot.pop=(100*(DivSampleNum(main.samp,2)[1])), numit=10^5, varleft=1e-8,
                               subsizes=6, dssamps=list(), nrf=1, minrarefac=1, NResamples=1000, minplaus=10, 
                               precision.lv=c(0.0001, 0.005, 0.005), plaus.pen=500,
                               crit.wts=c(1.0, 1.0, 1.0, 1.0), fitloops=2, numpred=5) {
-  mainfit <- multiple.scoring(models, init.params, param.ranges, main.samp, tot.pop, numit, varleft,
+  mainfit <- MultipleScoring(models, init.params, param.ranges, main.samp, tot.pop, numit, varleft,
                               subsizes, dssamps, nrf, minrarefac, NResamples, minplaus, precision.lv, plaus.pen, crit.wts, fitloops, numpred)
   mainfit$call <- match.call()
-  class(mainfit) <- "DiversityMaster"
+  class(mainfit) <- "DiveMaster"
   mainfit
 }
 
-################ C5c. Print method - score of multiple models #################
-print.DiversityMaster <- function(x, ...) {
+####### C5b. Print method - score of multiple models #######
+print.DiveMaster <- function(x, ...) {
   cat("Model score ($model.scores):\n")
   print(x$model.scores)
   cat("\nPopulation diversity estimate ($estimate):\n")
   print(x$estimate)
 }
 
-############# C5d. Summary method: fit/scores of multiple models ##############
-summary.DiversityMaster <- function(object, ...) {
+####### C5c. Summary method: fit/scores of multiple models #######
+summary.DiveMaster <- function(object, ...) {
   num.models <- length(object$fmm)
   
   best.index <- which.min(object$model.scores)
   best.model <- (object$fmm[[best.index]])$modelname
   div.pred.from.top.model <- ((object$fmm[[best.index]])$global)[1,]
-  
-#   m <- min(5, num.models)
-#   top5_scores <- sort(unique(object$model.scores))[1:m]
-#   len5 <- length(top5_scores)
-#   top5_index <- which(object$model.scores %in% top5_scores)
-#   pred5.vector <- c()
-#   for (i in 1:len5) {
-#     tmp <- ((object$fmm[[top5_index[i]]])$global)[1,]
-#     pred5.vector <- c(pred5.vector, tmp)
-#   }
-#   pred5 <- geo.mean(pred5.vector)
   
   TAB <- data.frame(Number_of_models_fitted=as.numeric(num.models),
                Best_scoring_model=best.model,
@@ -1066,22 +977,23 @@ summary.DiversityMaster <- function(object, ...) {
 
   res <- list(call=object$call,
               rsum=TAB)
-  class(res) <- "summary.DiversityMaster"
+  class(res) <- "summary.DiveMaster"
   res
 }
 
-######### C5e. Print summary method -  fits/scores of multiple models #########
-print.summary.DiversityMaster <- function(x, ...) {
+####### C5d. Print summary method -  fits/scores of multiple models #######
+print.summary.DiveMaster <- function(x, ...) {
   cat("Call:\n")
   print(x$call)
   cat("\nMultiple Model fitting and scoring summary:\n")
   print(x$rsum)
 }
 
-######### C6. Combining several DiveMaster objects into a single DiveMaster object #########
+
+####### C6. Combining several DiveMaster objects into a single DiveMaster object #######
 # Input: List of DiveMaster objects
 # Output: Single combined DiveMaster object
-comb.dm <- function(dmlist) {
+CombDM <- function(dmlist) {
   l <- length(dmlist) # number of DiveMaster objects
   out <- dmlist[[1]]
   if (l>1) {
@@ -1104,7 +1016,7 @@ comb.dm <- function(dmlist) {
       tmp <- ((out$fmm[[topx_index[j]]])$global)[1,]
       predx.vector <- c(predx.vector, tmp)
     }
-    predx <- geo.mean(predx.vector)
+    predx <- GeoMean(predx.vector)
     predx_high <- max(predx.vector)
     predx_low <- min(predx.vector)
     
@@ -1112,16 +1024,16 @@ comb.dm <- function(dmlist) {
     out$upper_estimate <- predx_high
     out$lower_estimate <- predx_low
   }
-  class(out) <- "DiversityMaster"
+  class(out) <- "DiveMaster"
   
   return(out)
 }
 
 
-######### C7. Give a diversity estimate for a different population size based on top-x score models #########
+####### C7. Give a diversity estimate for a different population size based on top-x score models #######
 # Input: DiveMaster object, population size, Number of top scores models to include in estimate
 # Output: Single population estimate
-popdiversity = function (dm, popsize, TopX = NULL) {
+PopDiversity = function (dm, popsize, TopX = NULL) {
   if (is.null(TopX))	{	
     m <- dm$m	
   } else {
@@ -1141,7 +1053,7 @@ popdiversity = function (dm, popsize, TopX = NULL) {
     tmp <- dm$models[[topx_index[i]]](popsize, dm$fmm[[topx_index[i]]]$param[1, ])
     predx.vector <- c(predx.vector, tmp)
   }
-  predx <- geo.mean(predx.vector)
+  predx <- GeoMean(predx.vector)
   predx_high <- max(predx.vector)
   predx_low <- min(predx.vector)
   return(list(estimate = predx, upper_estimate = predx_high, 

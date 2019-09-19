@@ -1,20 +1,20 @@
-\name{popdiversity}
-\alias{popdiversity}
+\name{PopDiversity}
+\alias{PopDiversity}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-popdiversity
+PopDiversity
 }
 \description{
-Calculates the species richness at a specified population size, taking an object of class \emph{DiversityMaster} as an input.
+Calculates the species richness at a specified population size, taking an object of class \emph{DiveMaster} as an input.
 }
 \usage{
-popdiversity(dm, popsize, TopX=NULL)
+PopDiversity(dm, popsize, TopX=NULL)
 }
 
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{dm}{
-  list of objects of class \emph{DiversityMaster}.
+  list of objects of class \emph{DiveMaster}.
 }
   \item{popsize}{
   positive real number. Population size.
@@ -24,7 +24,7 @@ popdiversity(dm, popsize, TopX=NULL)
 }
 }
 \details{
-\emph{comb.dm} combines multiple objects of class \emph{DiversityMaster}. Function used if \emph{DivE} estimation has been split into multiple, separate calls to \code{DiveMaster}.
+\emph{CombDM} combines multiple objects of class \emph{DiveMaster}. Function used if \emph{DivE} estimation has been split into multiple, separate calls to \code{DiveMaster}.
 
 
 }
@@ -35,10 +35,10 @@ A list of objects:
   \item{lower_estimate }{estimate lower bound}
 }
 \references{
-Laydon, D., Melamed, A., Sim, A., Gillet, N. A., Sim, K., Darko, S., Kroll, S., Douek, D. C., Price, D., Bangham, C. R. M., Asquith, B., Quantification of HTLV-1 clonality and TCR diversity, PLOS Comput. Biol. 2014
+Laydon, D. J., Melamed, A., Sim, A., Gillet, N. A., Sim, K., Darko, S., Kroll, S., Douek, D. C., Price, D., Bangham, C. R. M., Asquith, B., Quantification of HTLV-1 clonality and TCR diversity, PLOS Comput. Biol. 2014
 }
 \author{
-Daniel Laydon, Aaron Sim, Charles Bangham, Becca Asquith
+Daniel J. Laydon, Aaron Sim, Charles R.M. Bangham, Becca Asquith
 }
 
 

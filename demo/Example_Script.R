@@ -54,21 +54,21 @@ result <- DiveMaster(models=testmodels, init.params=testmeta, param.ranges = par
 # Again, with two samples (Main sample + one subset)
 
 ###########################################
-### 4.1 create rarefaction data (divsubsamples object)
+### 4.1 create rarefaction data (DivSubsamples object)
 ###########################################
 
 Bact1length = sum(Bact1$Count)
-dss_1 	<- divsubsamples(Bact1, nrf=2, minrarefac=1, maxrarefac=0.5*Bact1length	, NResamples=30)
-dss_2 	<- divsubsamples(Bact1, nrf=2, minrarefac=1, maxrarefac=Bact1length		, NResamples=30)
+dss_1 	<- DivSubsamples(Bact1, nrf=2, minrarefac=1, maxrarefac=0.5*Bact1length	, NResamples=30)
+dss_2 	<- DivSubsamples(Bact1, nrf=2, minrarefac=1, maxrarefac=Bact1length		, NResamples=30)
 dss 	<- list(dss_2, dss_1)
 
 ###########################################
-### 4.2 fit models (create fitsingleMod object)
+### 4.2 fit models (create FitSingleMod object)
 ###########################################
 fmm 		<- list()	## list of fitted model data
 for (i in 1:length(Mods)) 
 {
-	fsm.temp <- fitsinglemod(model.list = testmodels[i]	, init.param = testmeta[[i]],  
+	fsm.temp <- FitSingleMod(model.list = testmodels[i]	, init.param = testmeta[[i]],  
 			
 			param.range = paramranges[[i]], 
 			numit 		= 10^2, 
@@ -94,7 +94,7 @@ for (i in 1:length(Mods))
 }
 
 ###########################################
-### 4.3 score models (create list of class scoresinglemod)
+### 4.3 score models (create list of class ScoreSingleMod)
 ###########################################
 
 num.mod 		<- length(Mods)
@@ -107,7 +107,7 @@ TopX			<- 5		##
 
 for (i in 1:length(Mods)) 
 {
-	ssm.temp <- scoresinglemod(fsm = fmm[[i]], precision.lv = c(1e-04, 
+	ssm.temp <- ScoreSingleMod(fsm = fmm[[i]], precision.lv = c(1e-04, 
 					0.005, 0.005), plaus.pen = 500 )
 	mod.score.temp <- combine.criteria(ssm = ssm.temp, crit.wts = c(1, 1, 1, 1))
 	ssm[i, 1] <- ssm.temp$fit
@@ -158,7 +158,7 @@ plot(result$fmm$logistic, range="global") # Global plot of model 1 fit
 plot(result$fmm$negexp) # Local plot of model 2 fit
 plot(result$fmm$negexp, range="global") # Global plot of model 2 fit
 
-popdiversity(result, 10^6)	## calculate diversity at another population size. 
+PopDiversity(result, 10^6)	## calculate diversity at another population size. 
 
 ###########################################
 #### Step 6. Miscellaneous ####
@@ -167,9 +167,9 @@ popdiversity(result, 10^6)	## calculate diversity at another population size.
 ?DivE # Package summary
 
 # Component functions
-?divsubsamples
-?fitsinglemod
-?scoresinglemod
+?DivSubsamples
+?FitSingleMod
+?ScoreSingleMod
 
 
 

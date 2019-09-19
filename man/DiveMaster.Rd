@@ -1,9 +1,8 @@
 \name{DiveMaster}
 \alias{DiveMaster}
-\alias{DiveMaster.default}
-\alias{print.DiversityMaster}
-\alias{summary.DiversityMaster}
-\alias{print.summary.DiversityMaster}
+\alias{print.DiveMaster}
+\alias{summary.DiveMaster}
+\alias{print.summary.DiveMaster}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 DiveMaster
@@ -13,7 +12,7 @@ Implements the DivE diversity estimator.
 }
 \usage{
 DiveMaster(models, init.params, param.ranges, main.samp,
-           tot.pop=(100*(divsamplenum(main.samp,2)[1])), numit=10^5,
+           tot.pop=(100*(DivSampleNum(main.samp,2)[1])), numit=10^5,
            varleft=1e-8, subsizes=6, dssamps=list(), nrf=1, minrarefac=1,
            NResamples=1000, minplaus=10,
            precision.lv=c(0.0001, 0.005, 0.005), plaus.pen=500,
@@ -44,19 +43,19 @@ DiveMaster(models, init.params, param.ranges, main.samp,
   control argument passed to optimisation routine; see \code{\link[FME]{modFit}} for details.
 }
   \item{subsizes}{
-  either number of nested subsamples (integer, must be 2 or greater), or a vector of nested sample lengths. If the former, then the vector of sample lengths will be created using the \emph{divsamplenum} function.
+  either number of nested subsamples (integer, must be 2 or greater), or a vector of nested sample lengths. If the former, then the vector of sample lengths will be created using the \emph{DivSampleNum} function.
 }
   \item{dssamps}{
-  list of user specified rarefaction data \emph{divsubsamples} objects. The length of each component vector of each object in the list must correspond to the vector of nested sample lengths (as defined by the user in \code{subsizes}).
+  list of user specified rarefaction data \emph{DivSubsamples} objects. The length of each component vector of each object in the list must correspond to the vector of nested sample lengths (as defined by the user in \code{subsizes}).
 }
   \item{nrf}{
   difference between lengths of successive rarefaction datapoints.
 }
   \item{minrarefac}{
-  minimum rarefaction x-axis value. This argument is not used if list of \emph{divsubsamples} object is specified in \code{dssamps}.
+  minimum rarefaction x-axis value. This argument is not used if list of \emph{DivSubsamples} object is specified in \code{dssamps}.
 }
   \item{NResamples}{
-  number of resamples used to calculate the rarefaction data. This parameter is not used if list of \emph{divsubsamples} object is specified in \code{dssamps}.
+  number of resamples used to calculate the rarefaction data. This parameter is not used if list of \emph{DivSubsamples} object is specified in \code{dssamps}.
 }
   \item{minplaus}{
   lower x-axis bound for plausibility check.
@@ -79,9 +78,9 @@ DiveMaster(models, init.params, param.ranges, main.samp,
 \details{
 This is the master function of the DivE estimator. The default operation is a combination of four steps. 1. Generate a list of nested samples lengths from the main sample. 2. For each nested subsample, generate a vector of rarefaction data and their associated mean species diversity. 3. Fit to the generated data a set of models. 4. Evaluate the fits according to the DivE diversity estimation methodology and compare the scores across models and fitting criteria.
 
-A list of DiveMaster objects, each representing the fits to different sets of models, can combined into a single DiveMaster object using the \code{comb.dm} function. This is useful when running the DivE estimator with the full set of 58 models in a single run is not possible.
+A list of DiveMaster objects, each representing the fits to different sets of models, can combined into a single DiveMaster object using the \code{CombDM} function. This is useful when running the DivE estimator with the full set of 58 models in a single run is not possible.
 
-One can estimate the diversity for a given population using the \code{popdiversity} function where the arguments are the Divemaster object and the population size respectively.
+One can estimate the diversity for a given population using the \code{PopDiversity} function where the arguments are the Divemaster object and the population size respectively.
 }
 \value{
 A list of objects:
@@ -97,17 +96,17 @@ A list of objects:
   
 }
 \references{
-Laydon, D., Melamed, A., Sim, A., Gillet, N. A., Sim, K., Darko, S., Kroll, S., Douek, D. C., Price, D., Bangham, C. R. M., Asquith, B., Quantification of HTLV-1 clonality and TCR diversity, PLOS Comput. Biol. 2014
+Laydon, D. J., Melamed, A., Sim, A., Gillet, N. A., Sim, K., Darko, S., Kroll, S., Douek, D. C., Price, D., Bangham, C. R. M., Asquith, B., Quantification of HTLV-1 clonality and TCR diversity, PLOS Comput. Biol. 2014
 }
 \author{
-Daniel Laydon, Aaron Sim, Charles Bangham, Becca Asquith
+Daniel J. Laydon, Aaron Sim, Charles R.M. Bangham, Becca Asquith
 }
 
 
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-\code{\link[DivE]{fitsinglemod}}, \code{\link[DivE]{scoresinglemod}}
+\code{\link[DivE]{FitSingleMod}}, \code{\link[DivE]{ScoreSingleMod}}
 }
 \examples{
 require(DivE)
@@ -128,9 +127,9 @@ testmeta[[1]] <- matrix(c(0.9451638, 0.007428265, 0.9938149, 1.0147441, 0.009543
 paramranges[[1]] <- ParamRanges[[1]]
 
 
-# Create divsubsamples object (NB: For quick illustration only -- not default parameters)
-dss_1 <- divsubsamples(Bact1, nrf=2, minrarefac=1, maxrarefac=40, NResamples=5)
-dss_2 <- divsubsamples(Bact1, nrf=2, minrarefac=1, maxrarefac=65, NResamples=5)
+# Create DivSubsamples object (NB: For quick illustration only -- not default parameters)
+dss_1 <- DivSubsamples(Bact1, nrf=2, minrarefac=1, maxrarefac=40, NResamples=5)
+dss_2 <- DivSubsamples(Bact1, nrf=2, minrarefac=1, maxrarefac=65, NResamples=5)
 dss <- list(dss_2, dss_1)
 
 # Implement the function (NB: For quick illustration only -- not default parameters)
@@ -151,10 +150,10 @@ out$ssm
 summary(out)
 
 ## Combining two DiveMaster objects (assuming a second object 'out2'):
-# out3 <- comb.dm(list(out, out2))
+# out3 <- CombDM(list(out, out2))
 
 ## To calculate the diversity for a different population size
-# popdiversity(dm=out, popsize=10^5, TopX=1)
+# PopDiversity(dm=out, popsize=10^5, TopX=1)
 
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the

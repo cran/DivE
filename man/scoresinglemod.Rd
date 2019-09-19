@@ -1,24 +1,23 @@
-\name{scoresinglemod}
-\alias{scoresinglemod}
-\alias{scoresinglemod.default}
-\alias{print.scoresingleMod}
-\alias{summary.scoresingleMod}
-\alias{print.summary.scoresingleMod}
+\name{ScoreSingleMod}
+\alias{ScoreSingleMod}
+\alias{print.ScoreSingleMod}
+\alias{summary.ScoreSingleMod}
+\alias{print.summary.ScoreSingleMod}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-scoresinglemod
+ScoreSingleMod
 }
 \description{
 Determines the set of scores corresponding to a single model fit to a diversity values of subsamples of a given sample and its nested samples.
 }
 \usage{
-scoresinglemod(fsm, precision.lv=c(0.0001, 0.005, 0.005), plaus.pen=500)
+ScoreSingleMod(fsm, precision.lv=c(0.0001, 0.005, 0.005), plaus.pen=500)
 }
 
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{fsm}{
-  \emph{fitsinglemod} object
+  \emph{FitSingleMod} object
 }
   \item{precision.lv}{
   vector of precision level values for each criterion: 1. discrepancy -- mean percentage error between rarefaction data points and model predicion, 2. Sample accuracy -- percentage error between observed diversity of full rarefaction data and estimated diversity of full data from subsample, 3. local similarity. The scores for each criteria are defined as 1 + (multiples of bin sizes)
@@ -28,10 +27,10 @@ scoresinglemod(fsm, precision.lv=c(0.0001, 0.005, 0.005), plaus.pen=500)
 }
 }
 \details{
-The score for a given model is only meaningful when compared with scores of other models. Lower score = better for predicting the population diversity. To assess the performance of a single model, it is more informative to use \code{\link[DivE]{fitsinglemod}} function.
+The score for a given model is only meaningful when compared with scores of other models. Lower score = better for predicting the population diversity. To assess the performance of a single model, it is more informative to use \code{\link[DivE]{FitSingleMod}} function.
 }
 \value{
-A list of class \emph{scoresingleMod} containing the scores of the fit of the model to the diversity samples. This includes the following:
+A list of class \emph{ScoreSingleMod} containing the scores of the fit of the model to the diversity samples. This includes the following:
 
   \item{discrepancy }{score for discrepancy, aggregated across all nested subsamples}
   \item{accuracy }{score for accuracy of full sample prediction, aggregated across all nested subsamples}
@@ -42,17 +41,17 @@ A list of class \emph{scoresingleMod} containing the scores of the fit of the mo
   \item{modname }{model name}
 }
 \references{
-Laydon, D., Melamed, A., Sim, A., Gillet, N. A., Sim, K., Darko, S., Kroll, S., Douek, D. C., Price, D., Bangham, C. R. M., Asquith, B., Quantification of HTLV-1 clonality and TCR diversity, PLOS Comput. Biol. 2014
+Laydon, D. J., Melamed, A., Sim, A., Gillet, N. A., Sim, K., Darko, S., Kroll, S., Douek, D. C., Price, D., Bangham, C. R. M., Asquith, B., Quantification of HTLV-1 clonality and TCR diversity, PLOS Comput. Biol. 2014
 }
 \author{
-Daniel Laydon, Aaron Sim, Charles Bangham, Becca Asquith
+Daniel J. Laydon, Aaron Sim, Charles R.M. Bangham, Becca Asquith
 }
 
 
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-\code{\link[DivE]{fitsinglemod}}
+\code{\link[DivE]{FitSingleMod}}
 }
 \examples{
 require(DivE)
@@ -73,20 +72,20 @@ testmeta <- matrix(c(0.9451638, 0.007428265, 0.9938149, 1.0147441, 0.009543598, 
                         nrow=2, byrow=TRUE, dimnames=list(c(), c("a1", "a2", "a3"))) # Example seeds
 paramranges <- ParamRanges[[1]]
 
-# Create divsubsamples object (NB: For quick illustration only -- not default parameters)
-dss_1 <- divsubsamples(Bact1, nrf=2, minrarefac=1, maxrarefac=40, NResamples=5)
-dss_2 <- divsubsamples(Bact1, nrf=2, minrarefac=1, maxrarefac=65, NResamples=5)
+# Create DivSubsamples object (NB: For quick illustration only -- not default parameters)
+dss_1 <- DivSubsamples(Bact1, nrf=2, minrarefac=1, maxrarefac=40, NResamples=5)
+dss_2 <- DivSubsamples(Bact1, nrf=2, minrarefac=1, maxrarefac=65, NResamples=5)
 dss <- list(dss_2, dss_1)
 
 # Fit the model (NB: For quick illustration only -- not default parameters)
-fsm <- fitsinglemod(model.list=testmodels, init.param=testmeta, param.range=paramranges,
+fsm <- FitSingleMod(model.list=testmodels, init.param=testmeta, param.range=paramranges,
                     main.samp=Bact1, dssamps=dss, fitloops=1, data.default=FALSE,
                     subsizes=c(65, 40), 
                     numit=2) # numit chosen to be extremely small to speed up example
 
 
 # Score the model
-ssm <- scoresinglemod(fsm)
+ssm <- ScoreSingleMod(fsm)
 
 ssm
 summary(ssm)

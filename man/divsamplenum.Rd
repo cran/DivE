@@ -1,15 +1,14 @@
-\name{divsamplenum}
-\alias{divsamplenum}
-\alias{divsamplenum.default}
+\name{DivSampleNum}
+\alias{DivSampleNum}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-divsamplenum
+DivSampleNum
 }
 \description{
 Function to generate an integer sequence representing the lengths of nested samples of sample
 }
 \usage{
-divsamplenum(ms, n)
+DivSampleNum(ms, n)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -32,11 +31,11 @@ A decreasing sequence of nested sample lengths.
 %% ...
 }
 \references{
-Laydon, D., Melamed, A., Sim, A., Gillet, N. A., Sim, K., Darko, S., Kroll, S., Douek, D. C., Price, D., Bangham, C. R. M., Asquith, B., Quantification of HTLV-1 clonality and TCR diversity, PLOS Comput. Biol. 2014
+Laydon, D. J., Melamed, A., Sim, A., Gillet, N. A., Sim, K., Darko, S., Kroll, S., Douek, D. C., Price, D., Bangham, C. R. M., Asquith, B., Quantification of HTLV-1 clonality and TCR diversity, PLOS Comput. Biol. 2014
 
 }
 \author{
-Daniel Laydon, Aaron Sim, Charles Bangham, Becca Asquith
+Daniel J. Laydon, Aaron Sim, Charles R.M. Bangham, Becca Asquith
 %%  ~~who you are~~
 }
 
@@ -44,8 +43,8 @@ Daniel Laydon, Aaron Sim, Charles Bangham, Becca Asquith
 require(DivE)
 data(Bact1)
 
-divsamplenum(Bact1, 3)
-divsamplenum(Bact1, 6)
+DivSampleNum(Bact1, 3)
+DivSampleNum(Bact1, 6)
 
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
